@@ -1,13 +1,7 @@
 
-
-# The idea is to watch your mouse, 
-# and if it stays in the same place for more than a minute, 
-# and nothing is in full screen mode, start a prompt and start 
-# typing in it
-
-
 Add-Type -AssemblyName System.Windows.Forms | Out-Null
 
+# Helper Functions
 function Get-Position {
     $Pos = [System.Windows.Forms.Cursor]::Position
     $current_position = @($Pos.X, $Pos.Y)
@@ -27,6 +21,7 @@ function Compare-Position {
 
 function LookingBusy {
     if($process_id -eq 0){
+        
         $Process = [Diagnostics.Process]::Start("notepad")          
         $Process.Id 
     }else{
@@ -45,44 +40,36 @@ function stopLookingBusy{
     $process_id
 }
 
-$wait_time_before_prompt = 5
-$process_id = 0
 
+# Configuration settings
+$wait_time_before_notepad_opens = 15
+$process_id = 0
+$myshell = New-Object -com "Wscript.Shell"
 $last_position = @(0,0)
 
+
+# Main Process
 while ($true)
 {
     $last_position = Get-Position
-    Write-Host "Waiting"
-    Start-Sleep -Seconds $wait_time_before_prompt
+    Write-Host "Waiting to check position" $last_position
+    Start-Sleep -Seconds $wait_time_before_notepad_opens
     $current_position = Get-Position
 
     if(Compare-Position $last_position $current_position ){
         Write-Host "Mouse not moving"
         
         $process_id = LookingBusy
-        Write-Host $process_id
+        $myshell.AppActivate('Untitled - Notepad')
+        $time = (Get-Date) | Out-String
+        $myshell.sendkeys($time)
+        Write-Host "Notepad's Process ID: $process_id"
     } else{
-        Write-Host "Mouse IS moving"
+        Write-Host "Mouse IS moving, notepad should shutdown if open"
         $process_id = stopLookingBusy
-        Write-Host $process_id
+        Write-Host "Notepad's Process ID: $process_id"
     }
     
 }
-
-
-
-
-# $Process = [Diagnostics.Process]::Start("notepad")          
-# $id = $Process.Id            
-# Write-Host "Process created. Process id is $id"            
-# Write-Host "sleeping for 5 seconds"            
-# Start-Sleep -Seconds 5
-# try {            
-#     Stop-Process -Id $id -ErrorAction stop            
-#     Write-Host "Successfully killed the process with ID: $ID"            
-# } catch {            
-#     Write-Host "Failed to kill the process" 
-# }
 
 
